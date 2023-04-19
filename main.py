@@ -25,6 +25,7 @@ def command_menu(message: telebot.types.Message):
         calls.show_main_menu(message.chat.id, user['group'])
 
 
+
 @bot.message_handler()
 def get_text(message):
     if calls.check_user_in_cache(message):
@@ -57,8 +58,7 @@ def handle_buttons(call):
                          f'ввода данных другой команды.\n'
                          f'Сначала завершите ее или отмените')
         return
-    else:
-        calls_map[call.data](call.message)
+
 
 
 bot.polling(none_stop=True, interval=0)
