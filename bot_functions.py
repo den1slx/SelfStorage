@@ -131,6 +131,7 @@ def add_user(message: telebot.types.Message, step=0):
         user_id = db.add_new_user(user['name'], phone, tg_name, tg_user_id)
         bot.send_message(message.chat.id, f'Пользователь #{user_id} - {user["name"]} зарегистрирован.',
                          reply_markup=markup_client)
-
+        user['callback'] = None
+        user['callback_source'] = []
 
 
