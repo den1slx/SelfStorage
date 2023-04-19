@@ -2,10 +2,9 @@ import datetime as dt
 import telebot
 import db
 
+
 from telebot.util import quick_markup
 from datetime import timedelta
-
-
 from globals import (
     bot, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
     markup_client, markup_admin, markup_cancel_step, markup_add_user, UG_ADMIN, INPUT_DUE_TIME, chats
@@ -134,4 +133,16 @@ def add_user(message: telebot.types.Message, step=0):
         user['callback'] = None
         user['callback_source'] = []
 
+
+def get_rules_to_client(message: telebot.types.Message):
+    msg_text = '''Написать правила хранения'''
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+def get_rent_to_client(message: telebot.types.Message):
+    msg_text = '''Функция не готова'''
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+def get_client_pantry(message: telebot.types.Message):
+    msg_text = '''Функция не готова'''
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
