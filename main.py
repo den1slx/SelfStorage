@@ -8,6 +8,9 @@ from globals import *
 
 calls_map = {
     'add_user': calls.add_user,
+    'rules_to_client': calls.get_rules_to_client,
+    'rent_to_client': calls.get_rent_to_client,
+    'client_pantry': calls.get_client_pantry,
 }
 
 
@@ -58,6 +61,8 @@ def handle_buttons(call):
                          f'ввода данных другой команды.\n'
                          f'Сначала завершите ее или отмените')
         return
+    else:
+        calls_map[call.data](call.message)
 
 
 
