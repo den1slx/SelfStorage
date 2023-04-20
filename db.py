@@ -23,9 +23,9 @@ def get_example(user_id):
     return row
 
 example = get_example(933137433)
-
 print(example)
 print(example['client_address'])
+
 
 def get_user_by_chat_id(chat_id):
     cur: sqlite3.Cursor = con.execute(f'select *  from users where tg_user_id={chat_id}')

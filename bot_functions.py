@@ -138,9 +138,11 @@ def get_rules_to_client(message: telebot.types.Message):
     msg_text = '''Написать правила хранения'''
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
+
 def get_rent_to_client(message: telebot.types.Message):
     msg_text = '''Функция не готова'''
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
 
 def get_client_pantry(message: telebot.types.Message):
     msg_text = '''Функция не готова'''
