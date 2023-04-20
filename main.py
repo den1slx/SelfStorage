@@ -7,7 +7,6 @@ from globals import *
 
 
 calls_map = {
-    'add_user': calls.add_user,
     'rules_to_client': calls.get_rules_to_client,
     'rent_to_client': calls.get_rent_to_client,
     'client_pantry': calls.get_client_pantry,
