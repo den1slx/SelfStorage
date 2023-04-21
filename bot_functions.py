@@ -275,6 +275,10 @@ def get_rules_to_client(message: telebot.types.Message):
 
 def get_client_pantry(message: telebot.types.Message):
     msg_text = '''Функция не готова'''
+
+    msg_text = db.get_orders(message.chat.id)
+    if not msg_text:
+        msg_text = 'Вы еще не делали заказ / Ваша заявка еще не рассмотрена'
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
 
@@ -284,3 +288,45 @@ def get_price(type, value=0, weight=0, shelf_life=0):
     else:
         price = int(value) * rate_rack
     return price
+
+
+def get_overdue_storage(message: telebot.types.Message):
+    msg_text = None
+    if not msg_text():
+        msg_text = 'overdue_storage'
+    # msg_text = db.get_requests(status)
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+
+def get_storage_orders(message: telebot.types.Message):
+    msg_text = None
+    # msg_text = db.get_requests(status)
+    if not msg_text():
+        msg_text = 'status = storage_order'
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+
+def get_return_orders(message: telebot.types.Message):
+    msg_text = None
+    # msg_text = db.get_requests(status)
+    if not msg_text():
+        msg_text = 'status = return_order'
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+
+def get_success_orders(message: telebot.types.Message):
+    msg_text = None
+    # msg_text = db.get_requests(status)
+    if not msg_text():
+        msg_text = 'status = success'
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+
+def get_fail_orders(message: telebot.types.Message):
+    msg_text = None
+    # msg_text = db.get_requests(status)
+    if not msg_text():
+        msg_text = 'status = fail'
+    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+
