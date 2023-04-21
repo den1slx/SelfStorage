@@ -11,8 +11,9 @@ env.read_env()
 tg_bot_token = env('TG_CLIENTS_TOKEN')
 agreement = env('AGREEMENT')
 bot = telebot.TeleBot(token=tg_bot_token)
-rules = env('RULES')
-ADMINS = env.list('ADMINS')
+# rules = env('RULES')
+# ADMINS = env.list('ADMINS')
+
 # user groups
 UG_ADMIN = 0      # admimnistrators
 UG_CLIENT = 1     # clients
