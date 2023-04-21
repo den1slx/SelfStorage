@@ -1,4 +1,6 @@
 import datetime as dt
+import json
+
 import telebot
 import db
 
@@ -97,7 +99,17 @@ def show_main_menu(chat_id, group):
     :return:
     """
     markup = None
-    if str(chat_id) in ADMINS:
+
+   # if str(chat_id) in ADMINS:
+
+    if group == UG_CLIENT:
+        markup = markup_client
+        with open('data/welcome.json', 'r', encoding='utf-8') as fh:
+            rules = json.load(fh)
+        text = ' \n '.join(rules)
+        bot.send_message(chat_id, text)
+    elif group == UG_ADMIN:
+
         markup = markup_admin
     else:
         markup = markup_client
@@ -267,10 +279,20 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
 
 
 def get_rules_to_client(message: telebot.types.Message):
-    with open(rules, 'r', encoding='UTF-8') as text:
-        msg_text = text.read()
-    # bot.send_document(message.chat.id, open(rulespdf, 'rb'))
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+   # with open(rules, 'r', encoding='UTF-8') as text:
+   #    msg_text = text.read()
+   # bot.send_document(message.chat.id, open(rulespdf, 'rb'))
+   # bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+    user = message.chat.id
+    with open('data/rules.json', 'r', encoding='utf-8') as fh:
+        rules = json.load(fh)
+    text = ' \n '.join(rules)
+    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
+    user['callback'] = None
+    user['callback_source'] = []
+
 
 
 def get_client_pantry(message: telebot.types.Message):
