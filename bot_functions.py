@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import qrcode
 
 import telebot
 import db
@@ -290,14 +291,64 @@ def get_rules_to_client(message: telebot.types.Message):
 
 
 
-# def get_client_pantry(message: telebot.types.Message):
-#     msg_text = '''Функция не готова'''
-#     user_id = message.chat.id
-#     msg_text = str(db.get_orders(user_id))
-#     if not msg_text:
-#         msg_text = 'Вы еще не делали заказ / Ваша заявка еще не рассмотрена'
-#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
+def get_client_pantry(message: telebot.types.Message):
+    user_orders = db.get_user_orders(message.chat.id)
+    client_calls: list = chats[message.chat.id]['callback_source']
+    msg = bot.send_message(message.chat.id, 'У вас нет зарегистрированных заявок')
+    if not user_orders:
+        bot.send_message(message.chat.id, 'У вас нет зарегистрированных заявок')
+        return
+    for order in user_orders:
+        buttons = {}
+        order_id = order['order_id']
+        inventory = order['inventory']
+        date_reg = order['date_reg']
+        client_address = order['client_address']
+        if client_address == 'Пропустить':
+            client_address = 'Самостоятельная доставка'
+        if order['status'] == 1:
+            status_text = 'заявка принята к исполнению'
+            buttons['Отменить заявку'] = {'callback_data': f'cancel_app_id:{order_id}'}
+        if order['status'] == 2:
+            status_text = 'заявка на складе'
+            buttons['Открыть бокс'] = {'callback_data': f'open_box_id:{order["order_id"]}'}
+            buttons['Оформить доставку'] = {'callback_data': f'arrange_delivery_id:{order["order_id"]}'}
+            buttons['Закрыть аренду'] = {'callback_data': f'close_lease_id:{order["order_id"]}'}
+        msg_text = f'*Заявка #{order_id}*\n---\n' \
+                   f'На хранение: {inventory}\n---\n' \
+                   f'Адрес забора: {client_address}\n---\n' \
+                   f'Дата регистрации: {date_reg}\n---\n' \
+                   f'Статус: {status_text}\n'
+        msg = bot.send_message(message.chat.id, msg_text,
+                               parse_mode='Markdown',
+                               reply_markup=quick_markup(buttons))
+        client_calls.append(msg.id)
+
+
+def cancel_app_id(message: telebot.types.Message, order_id):
+    callback_source: list = chats[message.chat.id]['callback_source']
+    db.change_status(order_id, 4)
+    msg = bot.send_message(message.chat.id, 'Заявка закрыта', reply_markup=markup_client)
+    callback_source.append(msg.id)
+
+def open_box_id(message: telebot.types.Message, order_id):
+    callback_source: list = chats[message.chat.id]['callback_source']
+    msg = bot.send_message(message.chat.id, 'Для открытия воспользуйтесь QR code')
+    create_qrcode(order_id, msg.id)
+    msg = bot.send_photo(message.chat.id, open('open_box.png', 'rb'), reply_markup=markup_client)
+    callback_source.append(msg.id)
+
+def arrange_delivery_id(message: telebot.types.Message, order_id):
+    pass
+
+def close_lease_id(message: telebot.types.Message, order_id):
+    pass
+
+def create_qrcode(data, msq_id):
+    filename = 'open_box.png'
+    img = qrcode.make(''.join([data, str(msq_id)]))
+    img.save(filename)
 #
 # просроченное хранение
 # def get_overdue_storage(message: telebot.types.Message):

@@ -45,6 +45,8 @@ markup_cancel_step = quick_markup({
     'Отмена': {'callback_data': 'cancel_step'},
   })
 
+
+
 markup_skip = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 skip = types.KeyboardButton(text='Пропустить')
 markup_skip.add(skip)

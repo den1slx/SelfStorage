@@ -93,7 +93,23 @@ def add_order(client_id, client_phone, client_address, agreement, value, weight,
     return cur.lastrowid
 
 
+def get_user_orders(chat_id):
+    cur: sqlite3.Cursor = con.execute(
+        f'''SELECT orders.order_id, users.name,  orders.client_phone, orders.client_address, 
+        orders.inventory, orders.date_reg, orders.status
+        FROM users JOIN orders ON users.tg_user_id = orders.client_id
+        WHERE orders.status IN ("1", "2", "3") AND orders.client_id = "{chat_id}"'''
+    )
+    rows = cur.fetchall()
+    cur.close()
+    return rows
 
+
+def change_status(order_id, status):
+    cur = con.execute(f'UPDATE orders SET status = {status} WHERE order_id LIKE "{order_id}"')
+    con.commit()
+    cur.close()
+    return cur.lastrowid
 
 # def get_orders(user_id):
 #     cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
