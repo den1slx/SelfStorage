@@ -278,8 +278,7 @@ def get_rules_to_client(message: telebot.types.Message):
     with open('data/rules.json', 'r', encoding='utf-8') as fh:
         rules = json.load(fh)
     text = ' \n '.join(rules)
-    bot.send_message(message.chat.id, text, parse_mode='Markdown')
-    bot.send_message(message.chat.id, 'Варианты действий', reply_markup=markup_client)
+    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
     user['callback'] = None
     user['callback_source'] = []
 
