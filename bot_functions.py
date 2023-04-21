@@ -1,4 +1,6 @@
 import datetime as dt
+import json
+
 import telebot
 import db
 
@@ -99,6 +101,10 @@ def show_main_menu(chat_id, group):
     markup = None
     if group == UG_CLIENT:
         markup = markup_client
+        with open('data/welcome.json', 'r', encoding='utf-8') as fh:
+            rules = json.load(fh)
+        text = ' \n '.join(rules)
+        bot.send_message(chat_id, text)
     elif group == UG_ADMIN:
         markup = markup_admin
     msg = bot.send_message(chat_id, 'Варианты действий', reply_markup=markup)
@@ -268,8 +274,14 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
 
 
 def get_rules_to_client(message: telebot.types.Message):
-    msg_text = '''Функция не готова'''
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+    user = message.chat.id
+    with open('data/rules.json', 'r', encoding='utf-8') as fh:
+        rules = json.load(fh)
+    text = ' \n '.join(rules)
+    bot.send_message(message.chat.id, text, parse_mode='Markdown')
+    bot.send_message(message.chat.id, 'Варианты действий', reply_markup=markup_client)
+    user['callback'] = None
+    user['callback_source'] = []
 
 
 
