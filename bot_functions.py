@@ -275,8 +275,8 @@ def get_rules_to_client(message: telebot.types.Message):
 
 def get_client_pantry(message: telebot.types.Message):
     msg_text = '''Функция не готова'''
-
-    msg_text = db.get_orders(message.chat.id)
+    user_id = message.chat.id
+    msg_text = str(db.get_orders(user_id))
     if not msg_text:
         msg_text = 'Вы еще не делали заказ / Ваша заявка еще не рассмотрена'
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
