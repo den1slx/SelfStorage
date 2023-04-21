@@ -9,7 +9,7 @@ from datetime import timedelta
 from globals import (
     bot, agreement, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
     markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent,
-    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight
+    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight, rules, ADMINS
 )
 
 
@@ -97,10 +97,10 @@ def show_main_menu(chat_id, group):
     :return:
     """
     markup = None
-    if group == UG_CLIENT:
-        markup = markup_client
-    elif group == UG_ADMIN:
+    if str(chat_id) in ADMINS:
         markup = markup_admin
+    else:
+        markup = markup_client
     msg = bot.send_message(chat_id, 'Варианты действий', reply_markup=markup)
     chats[chat_id]['callback_source'] = [msg.id, ]
     chats[chat_id]['callback'] = None
@@ -266,12 +266,11 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
         user['callback_source'] = []
 
 
-
 def get_rules_to_client(message: telebot.types.Message):
-    msg_text = '''Функция не готова'''
+    with open(rules, 'r', encoding='UTF-8') as text:
+        msg_text = text.read()
+    # bot.send_document(message.chat.id, open(rulespdf, 'rb'))
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-
-
 
 
 def get_client_pantry(message: telebot.types.Message):
