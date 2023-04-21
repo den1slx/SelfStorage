@@ -10,7 +10,7 @@ from telebot.util import quick_markup
 from datetime import timedelta
 from globals import (
     bot, agreement, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
-    markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent,
+    markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent, markup_remove,
     UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight,
     # rules, ADMINS
 )
@@ -268,6 +268,8 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
 
         bot.send_message(message.chat.id, f'Заявка на хранение #{order_id} зарегистрирована. '
                          f'Предварительная стоимость {price} руб.',
+                         reply_markup=markup_remove)
+        bot.send_message(message.chat.id, f'Варианты действий ',
                          reply_markup=markup_client)
         user['callback'] = None
         user['callback_source'] = []

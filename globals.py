@@ -45,19 +45,21 @@ markup_cancel_step = quick_markup({
     'Отмена': {'callback_data': 'cancel_step'},
   })
 
-markup_skip = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=False, one_time_keyboard=True)
+markup_skip = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 skip = types.KeyboardButton(text='Пропустить')
 markup_skip.add(skip)
 
-markup_type_rent = types.ReplyKeyboardMarkup(resize_keyboard=True)
+markup_type_rent = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 box = types.KeyboardButton(text='Бокс')
 rack = types.KeyboardButton(text='Стеллаж')
 markup_type_rent.add(box, rack)
 
-markup_agreement = types.ReplyKeyboardMarkup(resize_keyboard=True)
+markup_agreement = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 cancel = types.KeyboardButton(text='Отмена')
 accept = types.KeyboardButton(text='Принять')
 markup_agreement.add(cancel, accept)
+
+markup_remove = types.ReplyKeyboardRemove()
 
 chats = {}
 
