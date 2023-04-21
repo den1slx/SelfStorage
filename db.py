@@ -61,7 +61,6 @@ def add_new_user(name, phone, tg_name, tg_user_id, user_group=1, access=1):
         return cur.lastrowid
 
 
-
 def get_number_box(type):
     cur: sqlite3.Cursor
     if type == 'Бокс':
@@ -80,7 +79,6 @@ def get_number_box(type):
                 return i
 
 
-
 def add_order(client_id, client_phone, client_address, agreement, value, weight, shelf_life, date_reg,
               date_end, status, inventory, price, box_number):
     data = (client_id, client_phone, client_address, agreement, value, weight, shelf_life, date_reg,
@@ -93,6 +91,49 @@ def add_order(client_id, client_phone, client_address, agreement, value, weight,
     con.commit()
     cur.close()
     return cur.lastrowid
+
+
+
+def get_orders(user_id):
+    cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
+    row = cur.fetchall()
+    cur.close()
+    return row
+
+def get_all_orders():
+    cur: sqlite3.Cursor = con.execute(f'select * from orders')
+    row = cur.fetchall()
+    cur.close()
+    return row
+
+
+# нуж добавить таблицу requests в db чтобы хранить заявки
+
+# def add_new_request(user_id, status, name, phone, type_, value=None, weight=None, shelf_life=None, address=None):
+#     data = user_id, name, phone, type_, value, weight, shelf_life, address
+#     cur = con.execute(
+#         'insert into requests '
+#         '(user_id, status, name, phone, type, value, weight, shelf_life, address)'
+#         'values( ?, ?, ?, ?, ?, ?, ?, ?, ?)', data)
+#     con.commit()
+#     cur.close()
+#     return cur.lastrowid
+#
+#
+# def get_requests(user_id):
+#     cur: sqlite3.Cursor = con.execute(f'select * from requests where client_id="{user_id}"')
+#     row = cur.fetchall
+#     cur.close()
+#     return row
+
+
+# def get_requests(status):
+#     cur: sqlite3.Cursor = con.execute(f'select * from requests where status="{status}"')
+#     row = cur.fetchall
+#     cur.close()
+#     return row
+
+
 
 #Denis
 
@@ -172,4 +213,5 @@ def convert_dict(dictionary):
 # update_order(tg_user_id, latest, update_data)
 # # check latest order
 # print(get_orders(tg_user_id)[-1])
+
 
