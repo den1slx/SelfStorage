@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from globals import USER_NOT_FOUND, ACCESS_DENIED, ACCESS_ALLOWED
 
 
-
 def dict_factory(cursor, row):
     fields = [column[0] for column in cursor.description]
     return {key: value for key, value in zip(fields, row)}
@@ -14,18 +13,6 @@ con = sqlite3.connect("database.db", check_same_thread=False)
 con.row_factory = dict_factory
 
 
-#Пример работы с БД
-
-def get_example(user_id):
-    cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
-    row = cur.fetchone()
-    cur.close()
-    return row
-
-example = get_example(933137433)
-
-print(example)
-print(example['client_address'])
 
 def get_user_by_chat_id(chat_id):
     cur: sqlite3.Cursor = con.execute(f'select *  from users where tg_user_id={chat_id}')
@@ -57,14 +44,57 @@ def check_user_access(tg_name=None, tg_user_id=None):
 
 
 def add_new_user(name, phone, tg_name, tg_user_id, user_group=1, access=1):
-    data = (name, phone, tg_name, tg_user_id, user_group, access)
+    cur: sqlite3.Cursor = con.execute(f"select name "
+                                      f"from users where tg_user_id={tg_user_id if tg_user_id else 0} or "
+                                      f"tg_name='{tg_name if tg_name else 0}'"
+                                      )
+    row = cur.fetchone()
+    cur.close()
+    if not row:
+        data = (name, phone, tg_name, tg_user_id, user_group, access)
+        cur = con.execute(
+            'insert into users '
+            '(name, phone, tg_name, tg_user_id, user_group, access) '
+            'values( ?, ?, ?, ?, ?, ?)', data)
+        con.commit()
+        cur.close()
+        return cur.lastrowid
+
+
+
+def get_number_box(type):
+    cur: sqlite3.Cursor
+    if type == 'Бокс':
+        for i in range(500, 900):
+            cur = con.execute(f'select box_number from orders where box_number={i}')
+            row = cur.fetchone()
+            cur.close()
+            if not row:
+                return i
+    else:
+        for i in range(100, 400):
+            cur = con.execute(f'select box_number from orders where box_number={i}')
+            row = cur.fetchone()
+            cur.close()
+            if not row:
+                return i
+
+
+
+def add_order(client_id, client_phone, client_address, agreement, value, weight, shelf_life, date_reg,
+              date_end, status, inventory, price, box_number):
+    data = (client_id, client_phone, client_address, agreement, value, weight, shelf_life, date_reg,
+            date_end, status, inventory, price, box_number)
     cur = con.execute(
-        'insert into users '
-        '(name, phone, tg_name, tg_user_id, user_group, access) '
-        'values( ?, ?, ?, ?, ?, ?)', data)
+        'insert into orders '
+        '(client_id, client_phone, client_address, agreement, value, weight, shelf_life, date_reg,'
+        'date_end, status, inventory, price, box_number)'
+        'values( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', data)
     con.commit()
     cur.close()
     return cur.lastrowid
+
+#Denis
 
 def add_new_order(client_id, value, weight, date_reg, shelf_life,
                   client_address, client_phone, inventory=None,
@@ -142,3 +172,4 @@ def convert_dict(dictionary):
 # update_order(tg_user_id, latest, update_data)
 # # check latest order
 # print(get_orders(tg_user_id)[-1])
+

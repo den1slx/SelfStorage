@@ -1,6 +1,7 @@
 import telebot
 
 
+from telebot import types
 from environs import Env
 from telebot.util import quick_markup
 
@@ -8,6 +9,7 @@ from telebot.util import quick_markup
 env = Env()
 env.read_env()
 tg_bot_token = env('TG_CLIENTS_TOKEN')
+agreement = env('AGREEMENT')
 bot = telebot.TeleBot(token=tg_bot_token)
 
 # user groups
@@ -41,9 +43,22 @@ markup_cancel_step = quick_markup({
     'Отмена': {'callback_data': 'cancel_step'},
   })
 
-markup_add_user = quick_markup({
-    'Регистрация': {'callback_data': 'add_user'},
-  })
+markup_skip = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=False, one_time_keyboard=True)
+skip = types.KeyboardButton(text='Пропустить')
+markup_skip.add(skip)
 
+markup_type_rent = types.ReplyKeyboardMarkup(resize_keyboard=True)
+box = types.KeyboardButton(text='Бокс')
+rack = types.KeyboardButton(text='Стеллаж')
+markup_type_rent.add(box, rack)
+
+markup_agreement = types.ReplyKeyboardMarkup(resize_keyboard=True)
+cancel = types.KeyboardButton(text='Отмена')
+accept = types.KeyboardButton(text='Принять')
+markup_agreement.add(cancel, accept)
 
 chats = {}
+
+rate_box = 1000
+rate_rack = 899
+rate_weight = 2

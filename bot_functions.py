@@ -3,12 +3,15 @@ import telebot
 import db
 
 
+
 from telebot.util import quick_markup
 from datetime import timedelta
 from globals import (
-    bot, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
-    markup_client, markup_admin, markup_cancel_step, markup_add_user, UG_ADMIN, INPUT_DUE_TIME, chats
+    bot, agreement, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
+    markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent,
+    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight
 )
+
 
 
 # COMMON FUNCTIONS
@@ -24,16 +27,18 @@ def start_bot(message: telebot.types.Message):
         'callback_source': [],  # если задан, колбэк кнопки будут обрабатываться только с этих сообщений
         'group': group,  # группа, к которой принадлежит пользователь
         'access_due': access_due,  # дата и время актуальности кэшированного статуса
+        'address': None,  # адрес доставки
         'access': access,  # код доступа
+        'shelf_life': None,  # количество месяцев аренды
+        'type': None,  # тип аренды
+        'value': None,
+        'weight': None,  # значение для веса
+        'agreement': None,  # для согласия на обработку данных
         'text': None,  # для разных целей - перспектива
         'number': None,  # для разных целей - перспектива
         'step_due': None,  # срок актуальности ожидания ввода данных (используем в callback функциях)
     }
-    if access == USER_NOT_FOUND:
-        bot.send_message(message.chat.id, 'Вы не зарегистрированы в системе.', reply_markup=markup_add_user)
-        return
-    elif access == ACCESS_DENIED and group == UG_CLIENT:
-
+    if access == ACCESS_DENIED and group == UG_CLIENT:
         bot.send_message(message.chat.id, 'Ваша аренда в просроке, новые заявки создать нельзя.'
                                           'обратитесь к администратору для решения данного вопроса')
     show_main_menu(message.chat.id, group)
@@ -50,6 +55,12 @@ def cache_user(chat_id):
         'group': user['user_group'],    # группа, к которой принадлежит пользователь
         'access_due': access_due,       # дата и время актуальности кэшированного статуса
         'access': user['access'],       # код доступа
+        'address': None,                # адрес доставки
+        'shelf_life': None,             # количество месяцев аренды
+        'type': None,                   # тип аренды
+        'value': None,                  # значение для объема или количества
+        'weight': None,                 # значение для веса
+        'agreement': None,              # для согласия на обработку данных
         'text': None,                   # для разных целей - перспектива
         'number': None,                 # для разных целей - перспектива
         'step_due': None,               # срок  ожидания ввода данных (используем в callback функциях)
@@ -103,14 +114,14 @@ def cancel_step(message: telebot.types.Message):
     chats[message.chat.id]['callback'] = None
 
 
-def add_user(message: telebot.types.Message, step=0):
+def get_rent_to_client(message: telebot.types.Message, step=0):
     user = chats[message.chat.id]
-    user['callback'] = 'add_user'
+    user['callback'] = 'rules_to_client'
     if step == 0:
-        msg = bot.send_message(message.chat.id, 'Введите ФИО пользователя для регистации',
+        msg = bot.send_message(message.chat.id, 'Введите Имя',
                                parse_mode='Markdown', reply_markup=markup_cancel_step)
         user['callback_source'] = [msg.id, ]
-        bot.register_next_step_handler(msg, add_user, 1)
+        bot.register_next_step_handler(msg, get_rent_to_client, 1)
         user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
     elif user['step_due'] < dt.datetime.now():
         bot.send_message(message.chat.id, 'Время ввода данных истекло')
@@ -121,28 +132,156 @@ def add_user(message: telebot.types.Message, step=0):
         msg = bot.send_message(
             message.chat.id, 'Введите номер телефона', parse_mode='Markdown', reply_markup=markup_cancel_step)
         user['callback_source'] = [msg.id]
-        bot.register_next_step_handler(message, add_user, 2)
+        bot.register_next_step_handler(message, get_rent_to_client, 2)
         user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
     elif step == 2:
+        user['number'] = message.text
+        bot.send_document(message.chat.id, open(agreement, 'rb'))
+        msg = bot.send_message(message.chat.id, 'Ознакомьтесь с согласием на обработку персональных данных. '
+                             'При согласии введите "Принять" или нажмите кнопку отмены.',
+                             parse_mode='Markdown', reply_markup=markup_agreement)
+        user['callback_source'] = [msg.id, ]
+        bot.register_next_step_handler(msg, get_rent_to_client, 3)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    elif step == 3:
+        user['agreement'] = message.text
+        if user['agreement'] == 'Принять':
+            msg = bot.send_message(message.chat.id, 'Выбирите тип аренды. Бокс для хранения или стеллаж для документов.'
+                                   , parse_mode='Markdown', reply_markup=markup_type_rent)
+            user['callback_source'] = [msg.id, ]
+            bot.register_next_step_handler(msg, get_rent_to_client, 4)
+            user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+        else:
+            bot.send_message(message.chat.id, 'Отмена заявки')
+            cancel_step(message)
+    elif step == 4:
+        user['type'] = message.text
+        if user['type'] == 'Бокс':
+            msg = bot.send_message(message.chat.id, 'Введите перечень вещей, которые хотите сдать на хранение '
+                                                    'или просто нажмите пропустить и мы все сделаем сами при приемке',
+                                   parse_mode='Markdown', reply_markup=markup_skip)
+            user['callback_source'] = [msg.id, ]
+            bot.register_next_step_handler(msg, get_rent_to_client, 5)
+            user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+        elif user['type'] == 'Стеллаж':
+            msg = bot.send_message(message.chat.id, 'Введите цифрой общий количество стеллажей, которые хотите взять в '
+                                                    'аренду или просто нажмите пропустить и мы все сделаем '
+                                                    'сами при приемке',
+                                   parse_mode='Markdown', reply_markup=markup_skip)
+            user['callback_source'] = [msg.id, ]
+            bot.register_next_step_handler(msg, get_rent_to_client, 6)
+            user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+        else:
+            bot.send_message(message.chat.id, 'Отмена заявки')
+            cancel_step(message)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    elif step == 5:
+        user['text'] = message.text
+        msg = bot.send_message(message.chat.id, 'Введите цифрой общий объем вещей в м3, которые хотите сдать на '
+                                                'хранение или просто нажмите пропустить и мы все сделаем сами '
+                                                'при приемке',
+                                   parse_mode='Markdown', reply_markup=markup_skip)
+        user['callback_source'] = [msg.id, ]
+        bot.register_next_step_handler(msg, get_rent_to_client, 6)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    elif step == 6:
+        try:
+            user['value'] = int(message.text)
+        except:
+            user['value'] = 0
+
+        msg = bot.send_message(message.chat.id, 'Введите цифрой общий вес вещей в кг, которые хотите сдать на хранение '
+                                                'или просто нажмите пропустить и мы все сделаем сами при приемке',
+                                                parse_mode='Markdown', reply_markup=markup_skip)
+        user['callback_source'] = [msg.id, ]
+        bot.register_next_step_handler(msg, get_rent_to_client, 7)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    elif step == 7:
+        try:
+            user['weight'] = int(message.text)
+        except:
+            user['weight'] = 0
+        msg = bot.send_message(message.chat.id, 'Введите цифрой количество месяцев хранения '
+                                                'или просто нажмите пропустить и мы все сделаем сами при приемке',
+                               parse_mode='Markdown', reply_markup=markup_skip)
+        user['callback_source'] = [msg.id, ]
+        bot.register_next_step_handler(msg, get_rent_to_client, 8)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    elif step == 8:
+        try:
+            user['shelf_life'] = int(message.text)
+        except:
+            user['shelf_life'] = 0
+        msg = bot.send_message(message.chat.id, 'Введите адрес забора вещей на хранение '
+                                                'или просто нажмите пропустить если самостоятельно их привезете',
+                               parse_mode='Markdown', reply_markup=markup_skip)
+        user['callback_source'] = [msg.id, ]
+        bot.register_next_step_handler(msg, get_rent_to_client, 9)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    elif step == 9:
+        user['address'] = message.text
         tg_name = message.from_user.username
         tg_user_id = message.chat.id
-        phone = message.text
-        user_id = db.add_new_user(user['name'], phone, tg_name, tg_user_id)
-        bot.send_message(message.chat.id, f'Пользователь #{user_id} - {user["name"]} зарегистрирован.',
+        date_reg = dt.date.today()
+        date_end = date_reg + timedelta(days=user['shelf_life']*30)
+        status = 1
+        box_number = db.get_number_box(user['type'])
+        price = get_price(user['type'], user['value'], user['weight'], user['shelf_life'])
+        db.add_new_user(user['name'], user['number'], tg_name, tg_user_id)
+        order_id = db.add_order(tg_user_id, user['number'], user['address'], user['agreement'], user['value'],
+                                user['weight'], user['shelf_life'], date_reg, date_end, status, user['text'], price,
+                                box_number)
+
+        bot.send_message(message.chat.id, f'Заявка на хранение #{order_id} зарегистрирована.'
+                         f'Предварительная стоимость {price} руб.',
                          reply_markup=markup_client)
         user['callback'] = None
         user['callback_source'] = []
 
 
-def get_rules_to_client(message: telebot.types.Message):
-    msg_text = '''Написать правила хранения'''
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
-def get_rent_to_client(message: telebot.types.Message):
+def get_rules_to_client(message: telebot.types.Message):
     msg_text = '''Функция не готова'''
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+
+
+
 
 def get_client_pantry(message: telebot.types.Message):
     msg_text = '''Функция не готова'''
     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
+
+def get_price(type, value=0, weight=0, shelf_life=0):
+    if type == 'Бокс':
+        price = int(value) * int(shelf_life) * rate_box + (int(weight) * rate_weight)
+    else:
+        price = int(value) * rate_rack
+    return price
