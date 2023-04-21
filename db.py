@@ -98,7 +98,7 @@ def get_user_orders(chat_id):
         f'''SELECT orders.order_id, users.name,  orders.client_phone, orders.client_address, 
         orders.inventory, orders.date_reg, orders.status
         FROM users JOIN orders ON users.tg_user_id = orders.client_id
-        WHERE orders.status IN ("1", "2", "3") AND orders.client_id = "{chat_id}"'''
+        WHERE orders.status IN ("1", "2", "3", "4") AND orders.client_id = "{chat_id}"'''
     )
     rows = cur.fetchall()
     cur.close()
@@ -107,6 +107,13 @@ def get_user_orders(chat_id):
 
 def change_status(order_id, status):
     cur = con.execute(f'UPDATE orders SET status = {status} WHERE order_id LIKE "{order_id}"')
+    con.commit()
+    cur.close()
+    return cur.lastrowid
+
+def change_delyvery_data(order_id, phone, address):
+    cur = con.execute(f'UPDATE orders SET client_phone = "{phone}", client_address = "{address}" '
+                      f'WHERE order_id LIKE "{order_id}"')
     con.commit()
     cur.close()
     return cur.lastrowid
