@@ -103,7 +103,7 @@ def show_main_menu(chat_id, group):
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
             rules = json.load(fh)
-        text = ' \n '.join(rules)
+        text = '\n'.join(rules)
         bot.send_message(chat_id, text)
     elif group == UG_ADMIN:
         markup = markup_admin
@@ -282,10 +282,13 @@ def get_price(type, value=0, weight=0, shelf_life=0):
 
 
 def get_rules_to_client(message: telebot.types.Message):
+    user = chats[message.chat.id]
     with open('data/rules.json', 'r', encoding='utf-8') as fh:
         rules = json.load(fh)
     text = ' \n '.join(rules)
     bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
+    user['callback'] = None
+    user['callback_source'] = []
 
 
 def get_client_pantry(message: telebot.types.Message):
