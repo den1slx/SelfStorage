@@ -13,7 +13,6 @@ con = sqlite3.connect("database.db", check_same_thread=False)
 con.row_factory = dict_factory
 
 
-
 def get_user_by_chat_id(chat_id):
     cur: sqlite3.Cursor = con.execute(f'select *  from users where tg_user_id={chat_id}')
     row = cur.fetchone()
@@ -111,12 +110,14 @@ def change_status(order_id, status):
     cur.close()
     return cur.lastrowid
 
+
 def change_delyvery_data(order_id, phone, address):
     cur = con.execute(f'UPDATE orders SET client_phone = "{phone}", client_address = "{address}" '
                       f'WHERE order_id LIKE "{order_id}"')
     con.commit()
     cur.close()
     return cur.lastrowid
+
 
 # def get_orders(user_id):
 #     cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
@@ -158,8 +159,7 @@ def change_delyvery_data(order_id, phone, address):
 #     return row
 
 
-
-#Denis
+# Denis
 
 # def add_new_order(client_id, value, weight, date_reg, shelf_life,
 #                   client_address, client_phone, inventory=None,
@@ -239,3 +239,8 @@ def change_delyvery_data(order_id, phone, address):
 # print(get_orders(tg_user_id)[-1])
 
 
+def get_date_end_active_orders():
+    cur: sqlite3.Cursor = con.execute(f'select order_id, client_id, date_end, inventory from orders where status=1')
+    rows = cur.fetchall()
+    cur.close()
+    return rows

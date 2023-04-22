@@ -86,17 +86,17 @@ def runBot():
 
 
 def runSchedulers():
-    schedule.every().monday.at("11:30")
-
+    schedule.every(1).day.at("12:00").do(calls.send_notification)  # - запуск каждый день в определенное время
+    # schedule.every(10).seconds.do(calls.send_notification)  # - запуск каждые 10 секунд
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        time.sleep(60)
 
 
-if __name__ == "__main__":
-    t1 = threading.Thread(target=runBot)
-    t2 = threading.Thread(target=runSchedulers)
-    # starting thread 1
+if __name__ == '__main__':
+    t1 = threading.Thread(target=runSchedulers, daemon=True)
+    t2 = threading.Thread(target=runBot, daemon=True)
     t1.start()
-    # starting thread 2
     t2.start()
+    while 1:
+        pass
