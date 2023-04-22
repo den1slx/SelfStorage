@@ -1,5 +1,4 @@
 import sqlite3
-from datetime import timedelta
 
 from globals import USER_NOT_FOUND, ACCESS_DENIED, ACCESS_ALLOWED
 
@@ -11,7 +10,6 @@ def dict_factory(cursor, row):
 
 con = sqlite3.connect("database.db", check_same_thread=False)
 con.row_factory = dict_factory
-
 
 
 def get_user_by_chat_id(chat_id):
@@ -93,11 +91,6 @@ def add_order(client_id, client_phone, client_address, agreement, value, weight,
     return cur.lastrowid
 
 
-
-def get_orders(user_id):
-    cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
-    row = cur.fetchall()
-
 def get_user_orders(chat_id):
     cur: sqlite3.Cursor = con.execute(
         f'''SELECT orders.order_id, users.name,  orders.client_phone, orders.client_address, 
@@ -111,50 +104,12 @@ def get_user_orders(chat_id):
     return rows
 
 
-
 def get_first_order_by_status(status):
     cur: sqlite3.Cursor = con.execute(f'select *  from orders where status={status}')
     row = cur.fetchone()
     cur.close()
 
     return row
-
-
-def add_new_order(client_id, value, weight, date_reg, shelf_life,
-                  client_address, client_phone, inventory=None,
-                  box_number=None, rack_number=None,
-                  forwarder_id=0, status=1):
-    #  ' Отредактировать в соответствии с колонками таблицы ' #
-    date_end = date_reg + timedelta(days=shelf_life*30)
-    order_id = len(get_orders(client_id))
-
-    alert_date = date_end - timedelta(days=10)  # need redact
-    data = (order_id, client_id, forwarder_id, client_phone, client_address,
-            box_number, rack_number, value, weight, shelf_life,
-            date_reg, date_end, alert_date, status, inventory)
-
-    cur = con.execute(
-        'insert into orders '
-        '''(order_id, client_id, forwarder_id, client_phone, client_address, box_number, 
-        rack_number, value, weight, shelf_life, date_reg, date_end, alert_date, status, inventory) '''
-        'values( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', data)
-
-    con.commit()
-    cur.close()
-    return cur.lastrowid
-
-
-def update_order(user_id, order_id, data):
-    order = get_orders(user_id)[order_id]
-    order.update(data)
-    order = convert_dict(order)
-    cur = con.execute(
-        f"update orders set {order} "
-        )
-
-    con.commit()
-    cur.close()
-    return cur.lastrowid
 
 
 def convert_dict(dictionary):
@@ -164,11 +119,13 @@ def convert_dict(dictionary):
         string += part
     return string[:-2]
 
+
 def change_status(order_id, status):
     cur = con.execute(f'UPDATE orders SET status = {status} WHERE order_id LIKE "{order_id}"')
     con.commit()
     cur.close()
     return cur.lastrowid
+
 
 def change_delyvery_data(order_id, phone, address):
     cur = con.execute(f'UPDATE orders SET client_phone = "{phone}", client_address = "{address}" '
@@ -177,101 +134,6 @@ def change_delyvery_data(order_id, phone, address):
     cur.close()
     return cur.lastrowid
 
-# def get_orders(user_id):
-#     cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
-#     row = cur.fetchall()
-#     cur.close()
-#     return row
-#
-# def get_all_orders():
-#     cur: sqlite3.Cursor = con.execute(f'select * from orders')
-#     row = cur.fetchall()
-#     cur.close()
-#     return row
-
-
-# нуж добавить таблицу requests в db чтобы хранить заявки
-
-# def add_new_request(user_id, status, name, phone, type_, value=None, weight=None, shelf_life=None, address=None):
-#     data = user_id, name, phone, type_, value, weight, shelf_life, address
-#     cur = con.execute(
-#         'insert into requests '
-#         '(user_id, status, name, phone, type, value, weight, shelf_life, address)'
-#         'values( ?, ?, ?, ?, ?, ?, ?, ?, ?)', data)
-#     con.commit()
-#     cur.close()
-#     return cur.lastrowid
-#
-#
-# def get_requests(user_id):
-#     cur: sqlite3.Cursor = con.execute(f'select * from requests where client_id="{user_id}"')
-#     row = cur.fetchall
-#     cur.close()
-#     return row
-
-
-# def get_requests(status):
-#     cur: sqlite3.Cursor = con.execute(f'select * from requests where status="{status}"')
-#     row = cur.fetchall
-#     cur.close()
-#     return row
-
-
-
-#Denis
-
-# def add_new_order(client_id, value, weight, date_reg, shelf_life,
-#                   client_address, client_phone, inventory=None,
-#                   box_number=None, rack_number=None,
-#                   forwarder_id=0, status=1):
-#     #  ' Отредактировать в соответствии с колонками таблицы ' #
-#     date_end = date_reg + timedelta(days=shelf_life*30)
-#     order_id = len(get_orders(client_id))
-#
-#     alert_date = date_end - timedelta(days=10)  # need redact
-#     data = (order_id, client_id, forwarder_id, client_phone, client_address,
-#             box_number, rack_number, value, weight, shelf_life,
-#             date_reg, date_end, alert_date, status, inventory)
-#
-#     cur = con.execute(
-#         'insert into orders '
-#         '''(order_id, client_id, forwarder_id, client_phone, client_address, box_number,
-#         rack_number, value, weight, shelf_life, date_reg, date_end, alert_date, status, inventory) '''
-#         'values( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', data)
-#
-#     con.commit()
-#     cur.close()
-#     return cur.lastrowid
-
-
-#
-# def update_order(user_id, order_id, data):
-#     order = get_orders(user_id)[order_id]
-#     order.update(data)
-#     order = convert_dict(order)
-#     cur = con.execute(
-#         f"update orders set {order} "
-#         )
-#
-#     con.commit()
-#     cur.close()
-#     return cur.lastrowid
-#
-#
-# def get_orders(user_id):
-#     cur: sqlite3.Cursor = con.execute(f'select * from orders where client_id="{user_id}"')
-#     row = cur.fetchall()
-#     cur.close()
-#     return row
-#
-#
-# def convert_dict(dictionary):
-#     string = ''
-#     for item, value in dictionary.items():
-#         part = f"{item} = '{value}', "
-#         string += part
-#     return string[:-2]
-#
 
 def get_order(order_id):
     order_id = int(order_id)
@@ -288,13 +150,6 @@ def get_orders_by_status(status):
     return row
 
 
-def get_all_orders():
-    cur: sqlite3.Cursor = con.execute(f'select * from orders')
-    row = cur.fetchall()
-    cur.close()
-    return row
-
-
 def update_order_by_order_id(order_id, data):
     order = get_order(order_id)
     order.update(data)
@@ -306,9 +161,3 @@ def update_order_by_order_id(order_id, data):
     con.commit()
     cur.close()
     return cur.lastrowid
-
-
-def add_return_order(order_id):
-    order = get_order(order_id)
-    order.update({'status': 3})
-    update_order_by_order_id(order_id, order)

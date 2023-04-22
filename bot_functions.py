@@ -100,12 +100,9 @@ def show_main_menu(chat_id, group):
     """
     markup = None
 
-    group = 1
-
-    if group == UG_CLIENT:
+    group = 0
 
     if not group or group == UG_CLIENT:
-# >>>>>>> 158f5cfea742d923875122935b75256524102b6e
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
             rules = json.load(fh)
@@ -332,7 +329,6 @@ def get_client_pantry(message: telebot.types.Message):
                                reply_markup=quick_markup(buttons))
         client_calls.append(msg.id)
 
-# >>>>>>> 158f5cfea742d923875122935b75256524102b6e
 
 def cancel_app_id(message: telebot.types.Message, order_id):
     callback_source: list = chats[message.chat.id]['callback_source']
@@ -408,14 +404,6 @@ def create_qrcode(data, msq_id):
 #     # msg_text = db.get_requests(status)
 #     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 #
-# заказы на хранение
-# def get_storage_orders(message: telebot.types.Message):
-#     msg_text = None
-#     # msg_text = db.get_requests(status)
-#     if not msg_text:
-#         msg_text = 'status = storage_order'
-#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-#
 # возврат заказов
 # def get_return_orders(message: telebot.types.Message):
 #     msg_text = None
@@ -464,7 +452,6 @@ def get_storage_orders(message: telebot.types.Message, step=0):
     weight = order['weight']
     shelf_life = order['shelf_life']
     inventory = order['inventory']
-
 
     user = chats[message.chat.id]
     user['callback'] = 'rules_to_client'
