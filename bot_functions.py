@@ -1,17 +1,17 @@
 import datetime as dt
 import json
-
+import qrcode
 import telebot
 import db
-
 
 
 from telebot.util import quick_markup
 from datetime import timedelta
 from globals import (
     bot, agreement, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
-    markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent,
-    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight, rules, ADMINS
+    markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent, markup_remove,
+    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight,
+    # rules, ADMINS
 )
 
 
@@ -99,21 +99,20 @@ def show_main_menu(chat_id, group):
     :return:
     """
     markup = None
-    # if str(chat_id) in ADMINS:
-    #     group = UG_ADMIN
+
     group = 1
 
     if group == UG_CLIENT:
+
+    if not group or group == UG_CLIENT:
+# >>>>>>> 158f5cfea742d923875122935b75256524102b6e
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
             rules = json.load(fh)
         text = ' \n '.join(rules)
         bot.send_message(chat_id, text)
     elif group == UG_ADMIN:
-
         markup = markup_admin
-    else:
-        markup = markup_client
     msg = bot.send_message(chat_id, 'Варианты действий', reply_markup=markup)
     chats[chat_id]['callback_source'] = [msg.id, ]
     chats[chat_id]['callback'] = None
@@ -129,7 +128,7 @@ def cancel_step(message: telebot.types.Message):
 
 def get_rent_to_client(message: telebot.types.Message, step=0):
     user = chats[message.chat.id]
-    user['callback'] = 'rules_to_client'
+    user['callback'] = 'rent_to_client'
     if step == 0:
         msg = bot.send_message(message.chat.id, 'Введите Имя',
                                parse_mode='Markdown', reply_markup=markup_cancel_step)
@@ -272,38 +271,13 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
                                 user['weight'], user['shelf_life'], date_reg, date_end, status, user['text'], price,
                                 box_number)
 
-        bot.send_message(message.chat.id, f'Заявка на хранение #{order_id} зарегистрирована.'
+        bot.send_message(message.chat.id, f'Заявка на хранение #{order_id} зарегистрирована. '
                          f'Предварительная стоимость {price} руб.',
+                         reply_markup=markup_remove)
+        bot.send_message(message.chat.id, f'Варианты действий ',
                          reply_markup=markup_client)
         user['callback'] = None
         user['callback_source'] = []
-
-
-def get_rules_to_client(message: telebot.types.Message):
-
-   # with open(rules, 'r', encoding='UTF-8') as text:
-   #    msg_text = text.read()
-   # bot.send_document(message.chat.id, open(rulespdf, 'rb'))
-   # bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-
-    user = message.chat.id
-    with open('data/rules.json', 'r', encoding='utf-8') as fh:
-        rules = json.load(fh)
-    text = ' \n '.join(rules)
-    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
-    user['callback'] = None
-    user['callback_source'] = []
-
-
-
-def get_client_pantry(message: telebot.types.Message):
-    msg_text = '''Функция не готова'''
-    user_id = message.chat.id
-    msg_text = str(db.get_orders(user_id))
-    if not msg_text:
-        msg_text = 'Вы еще не делали заказ / Ваша заявка еще не рассмотрена'
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-
 
 def get_price(type, value=0, weight=0, shelf_life=0):
     if type == 'Бокс':
@@ -313,37 +287,158 @@ def get_price(type, value=0, weight=0, shelf_life=0):
     return price
 
 
-def get_overdue_storage(message: telebot.types.Message):
-    msg_text = None
-    if not msg_text:
-        msg_text = 'overdue_storage'
-    # msg_text = db.get_requests(status)
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+def get_rules_to_client(message: telebot.types.Message):
+    with open('data/rules.json', 'r', encoding='utf-8') as fh:
+        rules = json.load(fh)
+    text = ' \n '.join(rules)
+    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
 
 
 
-def get_return_orders(message: telebot.types.Message):
-    msg_text = None
-    # msg_text = db.get_requests(status)
-    if not msg_text:
-        msg_text = 'status = return_order'
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+def get_client_pantry(message: telebot.types.Message):
+    user_orders = db.get_user_orders(message.chat.id)
+    client_calls: list = chats[message.chat.id]['callback_source']
+    if not user_orders:
+        bot.send_message(message.chat.id, 'У вас нет зарегистрированных заявок')
+        return
+    for order in user_orders:
+        buttons = {}
+        order_id = order['order_id']
+        inventory = order['inventory']
+        date_reg = order['date_reg']
+        client_address = order['client_address']
+        if client_address == 'Пропустить':
+            client_address = 'Самостоятельная доставка'
+        if order['status'] == 1:
+            status_text = 'заявка принята к исполнению'
+            buttons['Отменить заявку'] = {'callback_data': f'cancel_app_id:{order_id}'}
+        if order['status'] == 2:
+            status_text = 'заявка на складе'
+            buttons['Открыть бокс'] = {'callback_data': f'open_box_id:{order["order_id"]}'}
+            buttons['Оформить доставку'] = {'callback_data': f'arrange_delivery_id:{order["order_id"]}'}
+            buttons['Закрыть аренду'] = {'callback_data': f'close_lease_id:{order["order_id"]}'}
+        if order['status'] == 3:
+            status_text = 'заявка в статусе доставки'
+        if order['status'] == 4:
+            status_text = 'заявка в статусе закрытия'
+
+        msg_text = f'*Заявка #{order_id}*\n---\n' \
+                   f'На хранение: {inventory}\n---\n' \
+                   f'Адрес доставки: {client_address}\n---\n' \
+                   f'Дата регистрации: {date_reg}\n---\n' \
+                   f'Статус: {status_text}\n'
+        msg = bot.send_message(message.chat.id, msg_text,
+                               parse_mode='Markdown',
+                               reply_markup=quick_markup(buttons))
+        client_calls.append(msg.id)
+
+# >>>>>>> 158f5cfea742d923875122935b75256524102b6e
+
+def cancel_app_id(message: telebot.types.Message, order_id):
+    callback_source: list = chats[message.chat.id]['callback_source']
+    db.change_status(order_id, 5)
+    msg = bot.send_message(message.chat.id, 'Заявка закрыта', reply_markup=markup_client)
+    callback_source.append(msg.id)
 
 
-def get_success_orders(message: telebot.types.Message):
-    msg_text = None
-    # msg_text = db.get_requests(status)
-    if not msg_text:
-        msg_text = 'status = success'
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+def open_box_id(message: telebot.types.Message, order_id):
+    callback_source: list = chats[message.chat.id]['callback_source']
+    msg = bot.send_message(message.chat.id, 'Для открытия воспользуйтесь QR code')
+    create_qrcode(order_id, msg.id)
+    msg = bot.send_photo(message.chat.id, open('open_box.png', 'rb'), reply_markup=markup_client)
+    callback_source.append(msg.id)
 
 
-def get_fail_orders(message: telebot.types.Message):
-    msg_text = None
-    # msg_text = db.get_requests(status)
-    if not msg_text:
-        msg_text = 'status = fail'
-    bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+def arrange_delivery_id(message: telebot.types.Message, order_id, step=0):
+    user = chats[message.chat.id]
+    user['callback'] = 'arrange_delivery_id'
+    if step == 0:
+        user['name'] = message.text
+        msg = bot.send_message(message.chat.id,
+                               'Введите номер контактного телефона', reply_markup=markup_cancel_step)
+        user['callback_source'] = [msg.id]
+        bot.register_next_step_handler(msg, arrange_delivery_id, order_id, 1)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    if step == 1:
+        user['number'] = message.text
+        msg = bot.send_message(message.chat.id,
+                               'Введите адрес доставки', reply_markup=markup_cancel_step)
+        user['callback_source'] = [msg.id]
+        bot.register_next_step_handler(msg, arrange_delivery_id, order_id, 2)
+        user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
+    elif user['step_due'] < dt.datetime.now():
+        bot.send_message(message.chat.id, 'Время ввода данных истекло')
+        cancel_step(message)
+        return
+    if step == 2:
+        user['address'] = message.text
+        db.change_status(order_id, 3)
+        db.change_delyvery_data(order_id, user['number'], user['address'])
+        msg = bot.send_message(message.chat.id,
+                               'Заказ принят, в течение часа с Вами свяжутся для согласования времени доставки '
+                               , reply_markup=markup_client)
+        user['callback'] = None
+        user['callback_source'] = []
+
+
+def close_lease_id(message: telebot.types.Message, order_id):
+    callback_source: list = chats[message.chat.id]['callback_source']
+    db.change_status(order_id, 4)
+    msg = bot.send_message(message.chat.id, 'Заявка на закрытие принята', reply_markup=markup_client)
+    callback_source.append(msg.id)
+
+
+def create_qrcode(data, msq_id):
+    filename = 'open_box.png'
+    img = qrcode.make(''.join([data, str(msq_id)]))
+    img.save(filename)
+
+
+
+#
+# просроченное хранение
+# def get_overdue_storage(message: telebot.types.Message):
+#     msg_text = None
+#     if not msg_text:
+#         msg_text = 'overdue_storage'
+#     # msg_text = db.get_requests(status)
+#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+#
+# заказы на хранение
+# def get_storage_orders(message: telebot.types.Message):
+#     msg_text = None
+#     # msg_text = db.get_requests(status)
+#     if not msg_text:
+#         msg_text = 'status = storage_order'
+#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+#
+# возврат заказов
+# def get_return_orders(message: telebot.types.Message):
+#     msg_text = None
+#     # msg_text = db.get_requests(status)
+#     if not msg_text:
+#         msg_text = 'status = return_order'
+#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+#
+# удачные заказы
+# def get_success_orders(message: telebot.types.Message):
+#     msg_text = None
+#     # msg_text = db.get_requests(status)
+#     if not msg_text:
+#         msg_text = 'status = success'
+#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+#
+# неудачные заказы
+# def get_fail_orders(message: telebot.types.Message):
+#     msg_text = None
+#     # msg_text = db.get_requests(status)
+#     if not msg_text:
+#         msg_text = 'status = fail'
+#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
 
 
 def get_storage_orders(message: telebot.types.Message, step=0):

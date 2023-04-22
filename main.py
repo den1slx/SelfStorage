@@ -10,9 +10,17 @@ calls_map = {
     'rules_to_client': calls.get_rules_to_client,
     'rent_to_client': calls.get_rent_to_client,
     'client_pantry': calls.get_client_pantry,
-    'overdue_storage': calls.get_overdue_storage,
-    'storage_orders': calls.get_storage_orders,
-    'return_orders': calls.get_return_orders,
+    # 'overdue_storage': calls.get_overdue_storage,
+    # 'storage_orders': calls.get_storage_orders,
+    # 'return_orders': calls.get_return_orders,
+}
+
+calls_id_map = {
+    'cancel_app_id': calls.cancel_app_id,
+    'open_box_id': calls.open_box_id,
+    'arrange_delivery_id': calls.arrange_delivery_id,
+    'close_lease_id': calls.close_lease_id,
+
 }
 
 
@@ -62,6 +70,12 @@ def handle_buttons(call):
                          f'Вы находитесь в режиме '
                          f'ввода данных другой команды.\n'
                          f'Сначала завершите ее или отмените')
+        return
+    if 'id' in btn_command:
+        parts = btn_command.split(':')
+        key_func = parts[-1]
+        func_name = parts[0]
+        calls_id_map[func_name](call.message, key_func)
         return
     else:
         calls_map[call.data](call.message)
