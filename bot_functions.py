@@ -101,7 +101,7 @@ def show_main_menu(chat_id, group):
     markup = None
     # if str(chat_id) in ADMINS:
     #     group = UG_ADMIN
-    group = 0
+    group = 1
 
     if group == UG_CLIENT:
         markup = markup_client

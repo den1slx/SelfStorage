@@ -186,3 +186,9 @@ def update_order_by_order_id(order_id, data):
     con.commit()
     cur.close()
     return cur.lastrowid
+
+
+def add_return_order(order_id):
+    order = get_order(order_id)
+    order.update({'status': 3})
+    update_order_by_order_id(order_id, order)
