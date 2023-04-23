@@ -5,14 +5,16 @@ import bot_functions as calls
 from globals import *
 
 
-
 calls_map = {
     'rules_to_client': calls.get_rules_to_client,
     'rent_to_client': calls.get_rent_to_client,
     'client_pantry': calls.get_client_pantry,
-    # 'overdue_storage': calls.get_overdue_storage,
-    # 'storage_orders': calls.get_storage_orders,
-    # 'return_orders': calls.get_return_orders,
+    'overdue_storage': calls.get_overdue_storage,
+    'storage_orders': calls.get_storage_orders,
+    'return_orders': calls.get_return_orders,
+    'return_orders_delivery': calls.get_return_orders_delivery,
+    'add_admin': calls.add_admin,
+    'status_info': calls.get_status_info,
 }
 
 calls_id_map = {
@@ -79,7 +81,6 @@ def handle_buttons(call):
         return
     else:
         calls_map[call.data](call.message)
-
 
 
 bot.polling(none_stop=True, interval=0)

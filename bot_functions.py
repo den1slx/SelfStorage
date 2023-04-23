@@ -10,7 +10,8 @@ from datetime import timedelta
 from globals import (
     bot, agreement, USER_NOT_FOUND, ACCESS_DENIED, UG_CLIENT, ACCESS_DUE_TIME, ACCESS_ALLOWED,
     markup_client, markup_admin, markup_cancel_step, markup_skip, markup_agreement, markup_type_rent, markup_remove,
-    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight,
+    UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight, markup_accept, markup_next, markup_add_admin,
+    markup_skip_or_menu,
     # rules, ADMINS
 )
 
@@ -99,9 +100,7 @@ def show_main_menu(chat_id, group):
     :return:
     """
     markup = None
-
-    group = 0
-
+    group = 2
     if not group or group == UG_CLIENT:
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
@@ -276,6 +275,7 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
         user['callback'] = None
         user['callback_source'] = []
 
+
 def get_price(type, value=0, weight=0, shelf_life=0):
     if type == 'Бокс':
         price = int(value) * int(shelf_life) * rate_box + (int(weight) * rate_weight)
@@ -289,7 +289,6 @@ def get_rules_to_client(message: telebot.types.Message):
         rules = json.load(fh)
     text = ' \n '.join(rules)
     bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
-
 
 
 def get_client_pantry(message: telebot.types.Message):
@@ -394,39 +393,216 @@ def create_qrcode(data, msq_id):
     img.save(filename)
 
 
+def get_overdue_storage(message: telebot.types.Message, step=0, index=0):
+    '''To fix: После нажатия кнопки нужно отправить не пустое сообщение
+    '''
+    orders = db.get_orders_by_status(7)
+    user = chats[message.chat.id]
+    try:
+        orders = user['orders']
+    except KeyError:
+        pass
+    if orders:
+        if step == 0:
+            user['index'] = index
 
-#
-# просроченное хранение
-# def get_overdue_storage(message: telebot.types.Message):
-#     msg_text = None
-#     if not msg_text:
-#         msg_text = 'overdue_storage'
-#     # msg_text = db.get_requests(status)
-#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-#
-# возврат заказов
-# def get_return_orders(message: telebot.types.Message):
-#     msg_text = None
-#     # msg_text = db.get_requests(status)
-#     if not msg_text:
-#         msg_text = 'status = return_order'
-#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-#
-# удачные заказы
-# def get_success_orders(message: telebot.types.Message):
-#     msg_text = None
-#     # msg_text = db.get_requests(status)
-#     if not msg_text:
-#         msg_text = 'status = success'
-#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-#
-# неудачные заказы
-# def get_fail_orders(message: telebot.types.Message):
-#     msg_text = None
-#     # msg_text = db.get_requests(status)
-#     if not msg_text:
-#         msg_text = 'status = fail'
-#     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
+            try:
+                order = orders[user['index']]
+                user['order_id'] = order['order_id']
+            except IndexError:
+                user['index'] = 0
+                order = orders[0]
+
+                bot.send_message(message.chat.id, f'Вы возвращены в начало списка')
+            msg_text = ''
+            for item, value in order.items():
+                msg_text += f'{item} : {value} \n'
+            msg = bot.send_message(message.chat.id, msg_text, reply_markup=markup_next)
+            user['callback_source'] = [msg.id]
+            bot.register_next_step_handler(message, get_overdue_storage, 1, index)
+        elif step == 1:
+            user['type'] = message.text
+            if user['type'] == 'Вперед':
+                user['index'] += 1
+                # bot.send_message(message.chat.id, f'Вперед', reply_markup=markup_next)
+                bot.register_next_step_handler(message, get_overdue_storage, 0, user['index'])
+            elif user['type'] == 'Назад':
+                user['index'] -= 1
+                # bot.send_message(message.chat.id, f'Назад', reply_markup=markup_next)
+                bot.register_next_step_handler(message, get_overdue_storage, 0, user['index'])
+            elif user['type'] == 'В меню':
+                bot.send_message(message.chat.id, 'Возвращение в меню', reply_markup=markup_admin)
+                user['callback'] = None
+                user['callback_source'] = []
+            elif user['type'] == 'Статус 5':
+                bot.send_message(message.chat.id, 'Заявка закрыта')
+                db.change_status(user['order_id'], 5)
+                user['orders'] = db.get_orders_by_status(7)
+                bot.register_next_step_handler(message, get_overdue_storage, 0, user['index'])
+            elif user['type'] == 'Статус 8':
+                bot.send_message(message.chat.id, 'Заявка провалена')
+                db.change_status(user['order_id'], 8)
+                user['orders'] = db.get_orders_by_status(7)
+                bot.register_next_step_handler(message, get_overdue_storage, 0, user['index'])
+            else:
+                bot.send_message(message.chat.id, f'{user["type"]}')
+    else:
+        bot.send_message(message.chat.id, f'Просроченных заявок нет.', reply_markup=markup_admin)
+
+        return
+
+
+def get_return_orders(message: telebot.types.Message, step=0):
+    '''Настроить кнопки для возврата и перезапуска функции'''
+    user = chats[message.chat.id]
+    orders = db.get_orders_by_status(3)
+    if orders:
+        order = orders[0]
+        order_id = order['order_id']
+    else:
+        bot.send_message(message.chat.id, f'Заявок на возврат нет.', reply_markup=markup_admin)
+        user['callback'] = None
+        user['callback_source'] = []
+        return
+    if step == 0:
+        msg_text = ''
+        for item, value in order.items():
+            msg_text += f'{item} : {value} \n'
+        msg = bot.send_message(message.chat.id, msg_text, reply_markup=markup_accept)
+        user['callback_source'] = [msg.id]
+        bot.register_next_step_handler(message, get_return_orders, 1)
+    elif step == 1:
+        user['type'] = message.text
+        if user['type'] == 'Подтвердить':
+            db.change_status(order_id, 2)
+            bot.send_message(message.chat.id, 'Заявка подтверждена', reply_markup=markup_admin)
+        elif user['type'] == 'Отклонить':
+            db.change_status(order_id, 6)
+            bot.send_message(message.chat.id, f'Заявка отклонена', reply_markup=markup_admin)
+        elif user['type'] == 'Назад в меню':
+            bot.send_message(message.chat.id, 'Возвращение в меню', reply_markup=markup_admin)
+        else:
+            bot.send_message(message.chat.id, f'{user["type"]}')
+        user['callback'] = None
+        user['callback_source'] = []
+
+
+def get_return_orders_delivery(message: telebot.types.Message, step=0):
+    '''Настроить кнопки для возврата и перезапуска функции'''
+    user = chats[message.chat.id]
+    orders = db.get_orders_by_status(4)
+    if orders:
+        order = orders[0]
+        order_id = order['order_id']
+        client_id = order['client_id']
+        forwarder_id = order['forwarder_id']
+    else:
+        bot.send_message(message.chat.id, f'Заявок на доставку нет.', reply_markup=markup_admin)
+        user['callback'] = None
+        user['callback_source'] = []
+        return
+    if step == 0:
+        msg_text = ''
+        for item, value in order.items():
+            msg_text += f'{item} : {value} \n'
+        msg = bot.send_message(message.chat.id, msg_text, reply_markup=markup_accept)
+        # user['callback_source'] = [msg.id]
+        bot.register_next_step_handler(message, get_return_orders_delivery, 1)
+    elif step == 1:
+        user['type'] = message.text
+        if user['type'] == 'Подтвердить':
+            db.change_status(order_id, 2)
+            bot.send_message(message.chat.id, 'Заявка подтверждена', reply_markup=markup_admin)
+        elif user['type'] == 'Отклонить':
+            db.change_status(order_id, 6)
+            bot.send_message(client_id, f'''Заявка на доставку отклонена. 
+            Укажите корректный адрес. Id администратора проверившего заявку: {forwarder_id}''')
+            bot.send_message(message.chat.id, f'Заявка отклонена', reply_markup=markup_admin)
+        elif user['type'] == 'Назад в меню':
+            bot.send_message(message.chat.id, 'Возвращение в меню', reply_markup=markup_admin)
+        else:
+            bot.send_message(message.chat.id, f'{user["type"]}')
+        user['callback'] = None
+        user['callback_source'] = []
+
+
+def add_admin(message: telebot.types.Message, step=0):
+    user = chats[message.chat.id]
+    if step == 0:
+        msg = bot.send_message(message.chat.id, 'Введите id пользователя')
+        bot.register_next_step_handler(message, add_admin, 1)
+    if step == 1:
+        user['tg_user_id'] = message.text
+        try:
+            tg_user_id = int(message.text)
+        except:
+            bot.send_message(message.chat.id, f'Некорректный id ', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
+        access_check = db.get_user_by_chat_id(tg_user_id)
+        if access_check:
+            db.change_group(tg_user_id, 2)
+            bot.send_message(message.chat.id, f'Права обновлены', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
+        else:
+            msg = bot.send_message(message.chat.id, 'Введите имя')
+            bot.register_next_step_handler(message, add_admin, 3)
+    if step == 3:
+        # user['callback_source'] = [msg.id]
+        name = str(message.text)
+        user['name'] = name
+        msg = bot.send_message(message.chat.id, 'Введите телефон')
+        bot.register_next_step_handler(message, add_admin, 4)
+    if step == 4:
+        # user['callback_source'] = [msg.id]
+        phone = str(message.text)
+        user['phone'] = phone
+        msg = bot.send_message(message.chat.id, f'Введите имя в ТГ {type(phone)}')
+        bot.register_next_step_handler(message, add_admin, 5)
+    if step == 5:
+        # user['callback_source'] = [msg.id]
+        tg_name = str(message.text)
+        user['tg_name'] = tg_name
+        msg = bot.send_message(message.chat.id, f'''Подтвердите правильность данных:
+Имя: {user['name']}
+Телефон: {user['phone']}
+Имя в ТГ: {user['tg_name']}
+Id: {user['tg_user_id']}
+''', reply_markup=markup_add_admin)
+        bot.register_next_step_handler(message, add_admin, 6)
+    if step == 6:
+        user['type'] = message.text
+        if user['type'] == 'Принять':
+            db.add_new_user(user['name'], user['phone'], user['tg_name'], user['tg_user_id'], user_group=2, access=1)
+            bot.send_message(message.chat.id, f'Администратор {user["tg_user_id"]} добавлен')
+
+        else:
+            bot.send_message(message.chat.id, f'Возвращаемся в меню', reply_markup=markup_admin)
+        user['callback'] = None
+        user['callback_source'] = []
+
+
+        # user['callback_source'] = [msg.id]
+
+def get_status_info(message: telebot.types.Message):
+    user = chats[message.chat.id]
+    status_info = f'''
+1 - Необработанный заказ, ожидает принятия админом
+2 - Принятый заказ (на складе)
+3 - Заказ на возврат, ожидает принятия админом
+4 - Заказ на самовывоз, ожидает принятия админом
+5 - Закрытый заказ (вещи забрали)
+6 - Отмененный заказ
+7 - Просроченный заказ (просрок до 6 мес на складе)
+8 - Проваленный заказ (не забрали после просрока 6 мес)
+'''
+    bot.send_message(message.chat.id, f'{status_info}', reply_markup=markup_admin)
+    user['callback'] = None
+    user['callback_source'] = []
+
 
 
 def get_storage_orders(message: telebot.types.Message, step=0):

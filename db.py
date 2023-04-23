@@ -127,6 +127,14 @@ def change_status(order_id, status):
     return cur.lastrowid
 
 
+def change_group(order_id, group):
+    cur = con.execute(f'UPDATE orders SET group = {group} WHERE order_id LIKE "{order_id}"')
+    con.commit()
+    cur.close()
+    return cur.lastrowid
+
+change_status(3, 7)
+
 def change_delyvery_data(order_id, phone, address):
     cur = con.execute(f'UPDATE orders SET client_phone = "{phone}", client_address = "{address}" '
                       f'WHERE order_id LIKE "{order_id}"')
@@ -161,3 +169,5 @@ def update_order_by_order_id(order_id, data):
     con.commit()
     cur.close()
     return cur.lastrowid
+
+

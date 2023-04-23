@@ -15,7 +15,7 @@ bot = telebot.TeleBot(token=tg_bot_token)
 # ADMINS = env.list('ADMINS')
 
 # user groups
-UG_ADMIN = 0      # admimnistrators
+UG_ADMIN = 2      # admimnistrators
 UG_CLIENT = 1     # clients
 
 # others
@@ -36,9 +36,12 @@ markup_client = quick_markup({
 })
 
 markup_admin = quick_markup({
-    'Просроченное хранение ': {'callback_data': 'overdue_storage'},
+    'Просроченное хранение': {'callback_data': 'overdue_storage'},
     'Заказы на хранение': {'callback_data': 'storage_orders'},
     'Заказы на возврат': {'callback_data': 'return_orders'},
+    'Заказы на доставку': {'callback_data': 'return_orders_delivery'},
+    'Добавить администратора': {'callback_data': 'add_admin'},
+    'Статусы': {'callback_data': 'status_info'}
 })
 
 markup_cancel_step = quick_markup({
@@ -46,10 +49,25 @@ markup_cancel_step = quick_markup({
   })
 
 
-
 markup_skip = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 skip = types.KeyboardButton(text='Пропустить')
 markup_skip.add(skip)
+
+markup_accept = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+reject = types.KeyboardButton(text='Отклонить')
+confirm = types.KeyboardButton(text='Подтвердить')
+menu = types.KeyboardButton(text='Назад в меню')
+markup_accept.add(menu, reject, confirm)
+
+markup_next = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+next_ = types.KeyboardButton(text='Вперед')
+back = types.KeyboardButton(text='Назад')
+menu = types.KeyboardButton(text='В меню')
+close = types.KeyboardButton(text='Статус 5')
+fail = types.KeyboardButton(text='Статус 8')
+markup_next.add(menu, back, next_, close, fail)
+markup_skip_or_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+markup_skip_or_menu.add(menu, skip)
 
 markup_type_rent = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 box = types.KeyboardButton(text='Бокс')
@@ -60,6 +78,9 @@ markup_agreement = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyb
 cancel = types.KeyboardButton(text='Отмена')
 accept = types.KeyboardButton(text='Принять')
 markup_agreement.add(cancel, accept)
+
+markup_add_admin = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+markup_add_admin.add(accept, menu)
 
 markup_remove = types.ReplyKeyboardRemove()
 
