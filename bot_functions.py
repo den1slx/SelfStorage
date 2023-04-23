@@ -98,7 +98,6 @@ def show_main_menu(chat_id, group):
     :return:
     """
     markup = None
-    group = 2
     if not group or group == UG_CLIENT:
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
