@@ -448,14 +448,15 @@ def get_overdue_storage(message: telebot.types.Message, step=0, index=0):
                 bot.send_message(message.chat.id, f'{user["type"]}')
     else:
         bot.send_message(message.chat.id, f'Просроченных заявок нет.', reply_markup=markup_admin)
-
+        user['callback'] = None
+        user['callback_source'] = []
         return
 
 
 def get_return_orders(message: telebot.types.Message, step=0):
     '''Настроить кнопки для возврата и перезапуска функции'''
     user = chats[message.chat.id]
-    orders = db.get_orders_by_status(3)
+    orders = db.get_orders_by_status(4)
     if orders:
         order = orders[0]
         order_id = order['order_id']
@@ -490,7 +491,7 @@ def get_return_orders(message: telebot.types.Message, step=0):
 def get_return_orders_delivery(message: telebot.types.Message, step=0):
     '''Настроить кнопки для возврата и перезапуска функции'''
     user = chats[message.chat.id]
-    orders = db.get_orders_by_status(4)
+    orders = db.get_orders_by_status(3)
     if orders:
         order = orders[0]
         order_id = order['order_id']
