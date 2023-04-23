@@ -636,12 +636,17 @@ def get_storage_orders(message: telebot.types.Message, step=0):
         msg = bot.send_message(
             message.chat.id,
             f'Текущее значение {client_phone} Введите номер телефона, нажмите  пропустить если указан',
-            parse_mode='Markdown', reply_markup=markup_skip)
+            parse_mode='Markdown', reply_markup=markup_skip_or_menu)
         user['callback_source'] = [msg.id]
         bot.register_next_step_handler(message, get_storage_orders, 1)
     if step == 1:
         if message.text == 'Пропустить':
             user['client_phone'] = None
+        if message.text == 'В меню':
+            bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
         else:
              user['client_phone'] = message.text
 
@@ -732,3 +737,30 @@ def get_storage_orders(message: telebot.types.Message, step=0):
         bot.send_message(message.chat.id, f'Заявка на хранение №{order_id} принята.', reply_markup=markup_admin)
         user['callback'] = None
         user['callback_source'] = []
+
+
+def get_stats(message: telebot.types.Message):
+    all = db.get_orders_count()
+    status_1 = db.get_orders_by_status(1)
+    status_2 = db.get_orders_by_status(2)
+    status_3 = db.get_orders_by_status(3)
+    status_4 = db.get_orders_by_status(4)
+    status_5 = db.get_orders_by_status(5)
+    status_6 = db.get_orders_by_status(6)
+    status_7 = db.get_orders_by_status(7)
+    status_8 = db.get_orders_by_status(8)
+    stats = f'''
+    Всего заявок {all}
+    Статус 1 : {len(status_1)}
+    Статус 2 : {len(status_2)}
+    Статус 3 : {len(status_3)}
+    Статус 4 : {len(status_4)}
+    Статус 5 : {len(status_5)}
+    Статус 6 : {len(status_6)}
+    Статус 7 : {len(status_7)}
+    Статус 8 : {len(status_8)}
+'''
+    user = chats[message.chat.id]
+    bot.send_message(message.chat.id, stats, reply_markup=markup_admin)
+    user['callback'] = None
+    user['callback_source'] = []

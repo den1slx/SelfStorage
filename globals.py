@@ -41,7 +41,8 @@ markup_admin = quick_markup({
     'Заказы на возврат': {'callback_data': 'return_orders'},
     'Заказы на доставку': {'callback_data': 'return_orders_delivery'},
     'Добавить администратора': {'callback_data': 'add_admin'},
-    'Статусы': {'callback_data': 'status_info'}
+    'Статусы': {'callback_data': 'status_info'},
+    'Статистика': {'callback_data': 'stats'}
 })
 
 markup_cancel_step = quick_markup({

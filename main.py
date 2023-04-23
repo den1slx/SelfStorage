@@ -15,6 +15,7 @@ calls_map = {
     'return_orders_delivery': calls.get_return_orders_delivery,
     'add_admin': calls.add_admin,
     'status_info': calls.get_status_info,
+    'stats': calls.get_stats,
 }
 
 calls_id_map = {

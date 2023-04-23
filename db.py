@@ -133,7 +133,6 @@ def change_group(order_id, group):
     cur.close()
     return cur.lastrowid
 
-change_status(3, 7)
 
 def change_delyvery_data(order_id, phone, address):
     cur = con.execute(f'UPDATE orders SET client_phone = "{phone}", client_address = "{address}" '
@@ -170,4 +169,10 @@ def update_order_by_order_id(order_id, data):
     cur.close()
     return cur.lastrowid
 
+
+def get_orders_count():
+    cur: sqlite3.Cursor = con.execute(f'select * from orders')
+    row = cur.fetchall()
+    cur.close()
+    return len(row)
 
