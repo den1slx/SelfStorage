@@ -1,10 +1,11 @@
 import datetime as dt
+import threading
+import time
 
+import schedule
 
 import bot_functions as calls
 from globals import *
-
-
 
 calls_map = {
     'rules_to_client': calls.get_rules_to_client,
@@ -38,7 +39,6 @@ def command_menu(message: telebot.types.Message):
         calls.show_main_menu(message.chat.id, user['group'])
 
 
-
 @bot.message_handler()
 def get_text(message):
     if calls.check_user_in_cache(message):
@@ -55,7 +55,7 @@ def handle_buttons(call):
         bot.send_message(call.message.chat.id, 'Кнопка не актуальна\n'
                                                '/menu - показать основное меню')
         return
-    elif (dt.datetime.now()-dt.timedelta(0, 180)) > dt.datetime.fromtimestamp(call.message.date):
+    elif (dt.datetime.now() - dt.timedelta(0, 180)) > dt.datetime.fromtimestamp(call.message.date):
         bot.send_message(call.message.chat.id, 'Срок действия кнопки истек')
         calls.show_main_menu(call.message.chat.id, chats[call.message.chat.id]['group'])
         return
@@ -81,5 +81,22 @@ def handle_buttons(call):
         calls_map[call.data](call.message)
 
 
+def runBot():
+    bot.polling(none_stop=True, interval=0)
 
-bot.polling(none_stop=True, interval=0)
+
+def runSchedulers():
+    schedule.every(1).day.at("12:00").do(calls.send_notification)  # - запуск каждый день в определенное время
+    # schedule.every(10).seconds.do(calls.send_notification)  # - запуск каждые 10 секунд
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+
+if __name__ == '__main__':
+    t1 = threading.Thread(target=runSchedulers, daemon=True)
+    t2 = threading.Thread(target=runBot, daemon=True)
+    t1.start()
+    t2.start()
+    while 1:
+        pass

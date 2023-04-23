@@ -4,7 +4,6 @@ import qrcode
 import telebot
 import db
 
-
 from telebot.util import quick_markup
 from datetime import timedelta
 from globals import (
@@ -13,7 +12,6 @@ from globals import (
     UG_ADMIN, INPUT_DUE_TIME, chats, rate_box, rate_rack, rate_weight,
     # rules, ADMINS
 )
-
 
 
 # COMMON FUNCTIONS
@@ -51,21 +49,21 @@ def cache_user(chat_id):
     access_due = dt.datetime.now() + dt.timedelta(0, ACCESS_DUE_TIME)
     chats[chat_id] = {
         'name': None,
-        'callback': None,               # current callback button
-        'last_msg': [],                 # последние отправленные за один раз сообщения, в которых нужно удалить кнопки
-        'callback_source': [],          # если задан, колбэк кнопки будут обрабатываться только с этих сообщений
-        'group': user['user_group'],    # группа, к которой принадлежит пользователь
-        'access_due': access_due,       # дата и время актуальности кэшированного статуса
-        'access': user['access'],       # код доступа
-        'address': None,                # адрес доставки
-        'shelf_life': None,             # количество месяцев аренды
-        'type': None,                   # тип аренды
-        'value': None,                  # значение для объема или количества
-        'weight': None,                 # значение для веса
-        'agreement': None,              # для согласия на обработку данных
-        'text': None,                   # для разных целей - перспектива
-        'number': None,                 # для разных целей - перспектива
-        'step_due': None,               # срок  ожидания ввода данных (используем в callback функциях)
+        'callback': None,  # current callback button
+        'last_msg': [],  # последние отправленные за один раз сообщения, в которых нужно удалить кнопки
+        'callback_source': [],  # если задан, колбэк кнопки будут обрабатываться только с этих сообщений
+        'group': user['user_group'],  # группа, к которой принадлежит пользователь
+        'access_due': access_due,  # дата и время актуальности кэшированного статуса
+        'access': user['access'],  # код доступа
+        'address': None,  # адрес доставки
+        'shelf_life': None,  # количество месяцев аренды
+        'type': None,  # тип аренды
+        'value': None,  # значение для объема или количества
+        'weight': None,  # значение для веса
+        'agreement': None,  # для согласия на обработку данных
+        'text': None,  # для разных целей - перспектива
+        'number': None,  # для разных целей - перспектива
+        'step_due': None,  # срок  ожидания ввода данных (используем в callback функциях)
     }
     return chats[chat_id]
 
@@ -103,7 +101,7 @@ def show_main_menu(chat_id, group):
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
             rules = json.load(fh)
-        text = ' \n '.join(rules)
+        text = '\n'.join(rules)
         bot.send_message(chat_id, text)
     elif group == UG_ADMIN:
         markup = markup_admin
@@ -148,8 +146,8 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
         user['number'] = message.text
         bot.send_document(message.chat.id, open(agreement, 'rb'))
         msg = bot.send_message(message.chat.id, 'Ознакомьтесь с согласием на обработку персональных данных. '
-                             'При согласии введите "Принять" или нажмите кнопку отмены.',
-                             parse_mode='Markdown', reply_markup=markup_agreement)
+                                                'При согласии введите "Принять" или нажмите кнопку отмены.',
+                               parse_mode='Markdown', reply_markup=markup_agreement)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_rent_to_client, 3)
         user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
@@ -197,7 +195,7 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
         msg = bot.send_message(message.chat.id, 'Введите цифрой общий объем вещей в м3, которые хотите сдать на '
                                                 'хранение или просто нажмите пропустить и мы все сделаем сами '
                                                 'при приемке',
-                                   parse_mode='Markdown', reply_markup=markup_skip)
+                               parse_mode='Markdown', reply_markup=markup_skip)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_rent_to_client, 6)
         user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
@@ -213,7 +211,7 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
 
         msg = bot.send_message(message.chat.id, 'Введите цифрой общий вес вещей в кг, которые хотите сдать на хранение '
                                                 'или просто нажмите пропустить и мы все сделаем сами при приемке',
-                                                parse_mode='Markdown', reply_markup=markup_skip)
+                               parse_mode='Markdown', reply_markup=markup_skip)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_rent_to_client, 7)
         user['step_due'] = dt.datetime.now() + dt.timedelta(0, INPUT_DUE_TIME)
@@ -256,7 +254,7 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
         tg_name = message.from_user.username
         tg_user_id = message.chat.id
         date_reg = dt.date.today()
-        date_end = date_reg + timedelta(days=user['shelf_life']*30)
+        date_end = date_reg + timedelta(days=user['shelf_life'] * 30)
         status = 1
         box_number = db.get_number_box(user['type'])
         price = get_price(user['type'], user['value'], user['weight'], user['shelf_life'])
@@ -266,12 +264,13 @@ def get_rent_to_client(message: telebot.types.Message, step=0):
                                 box_number)
 
         bot.send_message(message.chat.id, f'Заявка на хранение #{order_id} зарегистрирована. '
-                         f'Предварительная стоимость {price} руб.',
+                                          f'Предварительная стоимость {price} руб.',
                          reply_markup=markup_remove)
         bot.send_message(message.chat.id, f'Варианты действий ',
                          reply_markup=markup_client)
         user['callback'] = None
         user['callback_source'] = []
+
 
 def get_price(type, value=0, weight=0, shelf_life=0):
     if type == 'Бокс':
@@ -282,10 +281,13 @@ def get_price(type, value=0, weight=0, shelf_life=0):
 
 
 def get_rules_to_client(message: telebot.types.Message):
+    user = chats[message.chat.id]
     with open('data/rules.json', 'r', encoding='utf-8') as fh:
         rules = json.load(fh)
     text = ' \n '.join(rules)
     bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup_client)
+    user['callback'] = None
+    user['callback_source'] = []
 
 
 def get_client_pantry(message: telebot.types.Message):
@@ -390,6 +392,37 @@ def create_qrcode(data, msq_id):
     img.save(filename)
 
 
+def send_notification():
+    orders = db.get_date_end_active_orders()
+    notification_time = [30, 14, 7, 3, 0]
+    notification_exceeding_time = [-1, -30, -60, -90, -120, -150, -180]
+    current_date = dt.date.today()
+    for order in orders:
+        date_end = dt.datetime.strptime(str(order['date_end']), '%Y-%m-%d').date()
+        days_left = (date_end - current_date).days
+        if days_left in notification_time:
+            msg = bot.send_message(order['client_id'],
+                                   text=f"Уважаемый клиент. По заказу №{order['order_id']} ({order['inventory']})"
+                                        f" - через *{days_left} дней* заканчивается срок хранение. \nДля продления договора "
+                                        f"свяжитесь с администратором",
+                                   parse_mode='Markdown')
+        elif days_left in notification_exceeding_time:
+            if days_left == -1:
+                db.change_status(order['order_id'], 7)
+            msg = bot.send_message(order['client_id'],
+                                   text=f"*Внимание!* Уважаемый клиент. По заказу №{order['order_id']} ({order['inventory']})"
+                                        f" *срок хранения превышен на {-1 * days_left} дней*!. \nНачисляется оплата по тарифу, "
+                                        f"повышенному на 10%. \nЕсли не заберете вещи в течении 6 месяцев (180 дней) после прекращения договора"
+                                        f" - вы их потеряете",
+                                   parse_mode='Markdown')
+        elif days_left == -181:
+            msg = bot.send_message(order['client_id'],
+                                   text=f"*Внимание!* Уважаемый клиент. По заказу №{order['order_id']} ({order['inventory']})"
+                                        f" *срок хранения превышен на {-1 * days_left} дней*!. \n"
+                                        f"*Заказ аннулирован*",
+                                   parse_mode='Markdown')
+            db.change_status(order['order_id'], 8)
+
 
 #
 # просроченное хранение
@@ -431,5 +464,3 @@ def create_qrcode(data, msq_id):
 #     if not msg_text:
 #         msg_text = 'status = fail'
 #     bot.send_message(message.chat.id, msg_text, parse_mode='Markdown')
-
-
