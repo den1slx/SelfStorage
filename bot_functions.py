@@ -505,8 +505,7 @@ def get_return_orders_delivery(message: telebot.types.Message, step=0):
         msg_text = ''
         for item, value in order.items():
             msg_text += f'{item} : {value} \n'
-        msg = bot.send_message(message.chat.id, msg_text, reply_markup=markup_accept)
-        # user['callback_source'] = [msg.id]
+        bot.send_message(message.chat.id, msg_text, reply_markup=markup_accept)
         bot.register_next_step_handler(message, get_return_orders_delivery, 1)
     elif step == 1:
         user['type'] = message.text
@@ -529,7 +528,7 @@ def get_return_orders_delivery(message: telebot.types.Message, step=0):
 def add_admin(message: telebot.types.Message, step=0):
     user = chats[message.chat.id]
     if step == 0:
-        msg = bot.send_message(message.chat.id, 'Введите id пользователя')
+        bot.send_message(message.chat.id, 'Введите id пользователя')
         bot.register_next_step_handler(message, add_admin, 1)
     if step == 1:
         user['tg_user_id'] = message.text
@@ -548,25 +547,22 @@ def add_admin(message: telebot.types.Message, step=0):
             user['callback_source'] = []
             return
         else:
-            msg = bot.send_message(message.chat.id, 'Введите имя')
+            bot.send_message(message.chat.id, 'Введите имя')
             bot.register_next_step_handler(message, add_admin, 3)
     if step == 3:
-        # user['callback_source'] = [msg.id]
         name = str(message.text)
         user['name'] = name
-        msg = bot.send_message(message.chat.id, 'Введите телефон')
+        bot.send_message(message.chat.id, 'Введите телефон')
         bot.register_next_step_handler(message, add_admin, 4)
     if step == 4:
-        # user['callback_source'] = [msg.id]
         phone = str(message.text)
         user['phone'] = phone
-        msg = bot.send_message(message.chat.id, f'Введите имя в ТГ {type(phone)}')
+        bot.send_message(message.chat.id, f'Введите имя в ТГ {type(phone)}')
         bot.register_next_step_handler(message, add_admin, 5)
     if step == 5:
-        # user['callback_source'] = [msg.id]
         tg_name = str(message.text)
         user['tg_name'] = tg_name
-        msg = bot.send_message(message.chat.id, f'''Подтвердите правильность данных:
+        bot.send_message(message.chat.id, f'''Подтвердите правильность данных:
 Имя: {user['name']}
 Телефон: {user['phone']}
 Имя в ТГ: {user['tg_name']}
@@ -584,8 +580,6 @@ Id: {user['tg_user_id']}
         user['callback'] = None
         user['callback_source'] = []
 
-
-        # user['callback_source'] = [msg.id]
 
 def get_status_info(message: telebot.types.Message):
     user = chats[message.chat.id]
