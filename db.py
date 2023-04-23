@@ -179,7 +179,7 @@ def get_orders_count():
     return len(row)
 
 def get_date_end_active_orders():
-    cur: sqlite3.Cursor = con.execute(f'select order_id, client_id, date_end, inventory from orders where status=1')
+    cur: sqlite3.Cursor = con.execute(f'select order_id, client_id, date_end, inventory from orders where status in (2,7)')
     rows = cur.fetchall()
     cur.close()
     return rows
