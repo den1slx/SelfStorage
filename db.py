@@ -127,11 +127,13 @@ def change_status(order_id, status):
     return cur.lastrowid
 
 
+
 def change_group(order_id, group):
     cur = con.execute(f'UPDATE orders SET group = {group} WHERE order_id LIKE "{order_id}"')
     con.commit()
     cur.close()
     return cur.lastrowid
+
 
 
 def change_delyvery_data(order_id, phone, address):
@@ -176,3 +178,8 @@ def get_orders_count():
     cur.close()
     return len(row)
 
+def get_date_end_active_orders():
+    cur: sqlite3.Cursor = con.execute(f'select order_id, client_id, date_end, inventory from orders where status=1')
+    rows = cur.fetchall()
+    cur.close()
+    return rows
