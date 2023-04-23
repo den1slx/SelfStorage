@@ -642,7 +642,7 @@ def get_storage_orders(message: telebot.types.Message, step=0):
     if step == 1:
         if message.text == 'Пропустить':
             user['client_phone'] = None
-        if message.text == 'В меню':
+        elif message.text == 'В меню':
             bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
             user['callback'] = None
             user['callback_source'] = []
@@ -653,19 +653,24 @@ def get_storage_orders(message: telebot.types.Message, step=0):
         msg = bot.send_message(
             message.chat.id,
             f'Текущее значение {inventory} | Введите если опсиь не корректна',
-            parse_mode='Markdown', reply_markup=markup_skip)
+            parse_mode='Markdown', reply_markup=markup_skip_or_menu)
         user['callback_source'] = [msg.id]
         bot.register_next_step_handler(message, get_storage_orders, 2)
     elif step == 2:
         if message.text == 'Пропустить':
             user['inventory'] = None
+        elif message.text == 'В меню':
+            bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
         else:
             user['inventory'] = message.text
 
         msg = bot.send_message(message.chat.id, f'Текущее значение {value}, ячейка {box_number}'
                                                 'Введите цифрой общий объем вещей в м3, устанновленый при замере '
                                                 'или нажмите пропустить если установленный объем корректен',
-                               parse_mode='Markdown', reply_markup=markup_skip)
+                               parse_mode='Markdown', reply_markup=markup_skip_or_menu)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_storage_orders, 3)
 
@@ -674,11 +679,16 @@ def get_storage_orders(message: telebot.types.Message, step=0):
             user['value'] = int(message.text)
         except:
             user['value'] = None
+        if message.text == 'В меню':
+            bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
 
         msg = bot.send_message(message.chat.id, f'Текущее значение {weight}'
                                                 'Введите цифрой общий вес вещей в кг, сдатых на хранение '
                                                 'или нажмите пропустить если вес корректен',
-                                                parse_mode='Markdown', reply_markup=markup_skip)
+                                                parse_mode='Markdown', reply_markup=markup_skip_or_menu)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_storage_orders, 4)
     elif step == 4:
@@ -686,10 +696,15 @@ def get_storage_orders(message: telebot.types.Message, step=0):
             user['weight'] = int(message.text)
         except:
             user['weight'] = None
+        if message.text == 'В меню':
+            bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
         msg = bot.send_message(message.chat.id, f'Текущее значение {shelf_life}'
                                                 'Введите цифрой количество месяцев хранения '
                                                 'или нажмите пропустить если значение корректно',
-                               parse_mode='Markdown', reply_markup=markup_skip)
+                               parse_mode='Markdown', reply_markup=markup_skip_or_menu)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_storage_orders, 5)
     elif step == 5:
@@ -697,14 +712,24 @@ def get_storage_orders(message: telebot.types.Message, step=0):
             user['shelf_life'] = int(message.text)
         except:
             user['shelf_life'] = None
+        if message.text == 'В меню':
+            bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
         msg = bot.send_message(message.chat.id, f'Текущее значение {client_address}'
                                                 'Адрес клиента для доставки'
                                                 'если корректен или самовывоз нажмите пропустить ',
-                               parse_mode='Markdown', reply_markup=markup_skip)
+                               parse_mode='Markdown', reply_markup=markup_skip_or_menu)
         user['callback_source'] = [msg.id, ]
         bot.register_next_step_handler(msg, get_storage_orders, 6)
     elif step == 6:
         user['address'] = message.text
+        if message.text == 'В меню':
+            bot.send_message(message.chat.id, f'Обратно в меню.', reply_markup=markup_admin)
+            user['callback'] = None
+            user['callback_source'] = []
+            return
         if user['shelf_life']:
             shelf_life = user['shelf_life']
         if user['weight']:
