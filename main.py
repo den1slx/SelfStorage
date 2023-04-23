@@ -96,7 +96,7 @@ def runSchedulers():
     # schedule.every(10).seconds.do(calls.send_notification)  # - запуск каждые 10 секунд
     while True:
         schedule.run_pending()
-        time.sleep(60)
+        time.sleep(1)
 
 
 if __name__ == '__main__':

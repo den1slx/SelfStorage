@@ -98,7 +98,6 @@ def show_main_menu(chat_id, group):
     :return:
     """
     markup = None
-    group = 2
     if not group or group == UG_CLIENT:
         markup = markup_client
         with open('data/welcome.json', 'r', encoding='utf-8') as fh:
@@ -303,14 +302,18 @@ def get_client_pantry(message: telebot.types.Message):
         order_id = order['order_id']
         inventory = order['inventory']
         date_reg = order['date_reg']
+        date_end = order['date_end']
         client_address = order['client_address']
         if client_address == 'Пропустить':
             client_address = 'Самостоятельная доставка'
         if order['status'] == 1:
             status_text = 'заявка принята к исполнению'
             buttons['Отменить заявку'] = {'callback_data': f'cancel_app_id:{order_id}'}
-        if order['status'] == 2:
-            status_text = 'заявка на складе'
+        if order['status'] in (2, 7):
+            if order['status'] == 7:
+                status_text = '*заявка на складе: Срок договора истек*'
+            else:
+                status_text = 'заявка на складе'
             buttons['Открыть бокс'] = {'callback_data': f'open_box_id:{order["order_id"]}'}
             buttons['Оформить доставку'] = {'callback_data': f'arrange_delivery_id:{order["order_id"]}'}
             buttons['Закрыть аренду'] = {'callback_data': f'close_lease_id:{order["order_id"]}'}
@@ -323,6 +326,7 @@ def get_client_pantry(message: telebot.types.Message):
                    f'На хранение: {inventory}\n---\n' \
                    f'Адрес доставки: {client_address}\n---\n' \
                    f'Дата регистрации: {date_reg}\n---\n' \
+                   f'Дата окончания хранения: {date_end}\n---\n' \
                    f'Статус: {status_text}\n'
         msg = bot.send_message(message.chat.id, msg_text,
                                parse_mode='Markdown',
