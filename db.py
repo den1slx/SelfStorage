@@ -128,8 +128,8 @@ def change_status(order_id, status):
 
 
 
-def change_group(order_id, group):
-    cur = con.execute(f'UPDATE orders SET group = {group} WHERE order_id LIKE "{order_id}"')
+def change_group(tg_user_id, group):
+    cur = con.execute(f'UPDATE users SET user_group = {group} WHERE tg_user_id LIKE "{tg_user_id}"')
     con.commit()
     cur.close()
     return cur.lastrowid
@@ -183,3 +183,4 @@ def get_date_end_active_orders():
     rows = cur.fetchall()
     cur.close()
     return rows
+
